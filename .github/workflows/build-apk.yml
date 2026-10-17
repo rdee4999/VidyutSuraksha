@@ -46,6 +46,65 @@ jobs:
           unzip -q VidyutSuraksha_Android_Native_Project.zip -d .
           test -f VidyutSurakshaAndroid/app/build.gradle.kts
 
+      - name: Fix Java and Kotlin JVM targets
+        shell: bash
+        run: |
+          FILE="VidyutSurakshaAndroid/app/build.gradle.kts"
+          python3 - "$FILE" <<'PY'
+          import sys
+          from pathlib import Path
+
+          p = Path(sys.argv[1])
+          s = p.read_text()
+
+          if "compileOptions {" not in s:
+              s = s.replace(
+                  "android {",
+                  'android {\n    compileOptions {\n'
+                  '        sourceCompatibility = JavaVersion.VERSION_17\n'
+                  '        targetCompatibility = JavaVersion.VERSION_17\n'
+                  '    }\n',
+                  1
+              )
+          else:
+              start = s.index("compileOptions {")
+              end = s.index("}", start)
+              block = s[start:end]
+              import re
+              block = re.sub(
+                  r"sourceCompatibility\s*=\s*JavaVersion\.VERSION_[A-Z0-9_]+",
+                  "sourceCompatibility = JavaVersion.VERSION_17", block
+              )
+              block = re.sub(
+                  r"targetCompatibility\s*=\s*JavaVersion\.VERSION_[A-Z0-9_]+",
+                  "targetCompatibility = JavaVersion.VERSION_17", block
+              )
+              s = s[:start] + block + s[end:]
+
+          import re
+          if "kotlinOptions {" in s:
+              start = s.index("kotlinOptions {")
+              end = s.index("}", start)
+              block = s[start:end]
+              if re.search(r'jvmTarget\s*=', block):
+                  block = re.sub(r'jvmTarget\s*=\s*"[^"]+"',
+                                 'jvmTarget = "17"', block)
+              else:
+                  block += '\n        jvmTarget = "17"\n    '
+              s = s[:start] + block + s[end:]
+          else:
+              s = s.replace(
+                  "android {",
+                  'android {\n    kotlinOptions {\n'
+                  '        jvmTarget = "17"\n'
+                  '    }\n',
+                  1
+              )
+
+          p.write_text(s)
+          print("Updated Java and Kotlin targets to JVM 17")
+          PY
+
       - name: Build APK
         run: gradle --no-daemon -p VidyutSurakshaAndroid assembleDebug
 
