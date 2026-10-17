@@ -29,8 +29,7 @@ jobs:
   uses: android-actions/setup-android@v3
   with:
     log-accepted-android-sdk-licenses: false
-    
-      - name: Install Android SDK packages
+       - name: Install Android SDK packages
         shell: bash
         run: |
           set -e
