@@ -46,26 +46,30 @@ jobs:
           unzip -q VidyutSuraksha_Android_Native_Project.zip -d .
           test -f VidyutSurakshaAndroid/app/build.gradle.kts
 
+      
       - name: Fix Kotlin package declaration
         shell: bash
         run: |
           FILE="VidyutSurakshaAndroid/app/src/main/java/in/vidyutsuraksha/app/MainActivity.kt"
-          echo "First lines before fix:"
-          head -n 5 "$FILE"
           python3 - "$FILE" <<'PY'
           import sys
+          import re
           from pathlib import Path
+
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8-sig")
-          lines = s.splitlines()
-          if lines and lines[0].strip().startswith("package"):
-              lines[0] = "package in.vidyutsuraksha.app"
-          else:
-              lines.insert(0, "package in.vidyutsuraksha.app")
-          p.write_text("\n".join(lines) + "\n", encoding="utf-8")
-          print("Package declaration corrected.")
+          s = re.sub(
+              r'(?m)^\s*package\s+.*$',
+              'package com.vidyutsuraksha.app',
+              s,
+              count=1
+          )
+          if not s.startswith("package com.vidyutsuraksha.app"):
+              s = "package com.vidyutsuraksha.app\n\n" + s
+          p.write_text(s, encoding="utf-8")
+          print("Corrected Kotlin package declaration.")
           PY
-          head -n 5 "$FILE"
+
 
       - name: Fix Java and Kotlin JVM targets
         shell: bash
