@@ -46,6 +46,29 @@ jobs:
           unzip -q VidyutSuraksha_Android_Native_Project.zip -d .
           test -f VidyutSurakshaAndroid/app/build.gradle.kts
 
+      - name: Align Android package names
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("VidyutSurakshaAndroid/app/build.gradle.kts")
+          s = p.read_text()
+
+          s = re.sub(
+              r'(?m)^(\s*namespace\s*=\s*)"[^"]+"',
+              r'\1"com.vidyutsuraksha.app"', s
+          )
+          s = re.sub(
+              r'(?m)^(\s*applicationId\s*=\s*)"[^"]+"',
+              r'\1"com.vidyutsuraksha.app"', s
+          )
+
+          p.write_text(s)
+          print("Updated Android namespace and application ID.")
+          PY
+
       
       - name: Fix Kotlin package declaration
         shell: bash
